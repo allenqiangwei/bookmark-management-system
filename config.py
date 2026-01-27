@@ -11,3 +11,13 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)
     MAX_LOGIN_ATTEMPTS = 5
     LOGIN_ATTEMPT_WINDOW = 900  # 15分钟（秒）
+
+    # Session security
+    SESSION_COOKIE_SECURE = os.environ.get('FLASK_DEBUG') != 'True'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+
+    # Remember Me cookie security
+    REMEMBER_COOKIE_SECURE = os.environ.get('FLASK_DEBUG') != 'True'
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_DURATION = timedelta(days=30)

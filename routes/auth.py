@@ -23,7 +23,11 @@ def login():
         if user and user.check_password(password):
             login_user(user, remember=remember)
             next_page = request.args.get('next')
-            # Redirect to next_page if provided, otherwise to root
+            # Validate redirect URL to prevent open redirect attacks
+            if next_page and not next_page.startswith('/'):
+                next_page = None
+            if next_page and '//' in next_page:
+                next_page = None
             return redirect(next_page if next_page else '/')
         else:
             flash('Invalid username or password', 'error')
