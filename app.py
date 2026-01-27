@@ -39,6 +39,9 @@ def create_app(config_overrides=None):
     from routes.frontend import frontend
     app.register_blueprint(frontend)
 
+    from routes.admin import admin
+    app.register_blueprint(admin)
+
     return app
 
 if __name__ == '__main__':
