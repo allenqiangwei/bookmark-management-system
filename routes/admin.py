@@ -119,3 +119,96 @@ def reorder_bookmarks():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 400
+
+
+@admin.route('/groups')
+@login_required
+def groups():
+    """分组管理页面"""
+    groups = Group.query.filter_by(user_id=current_user.id).order_by(Group.order).all()
+
+    # 为每个分组统计书签数量
+    groups_with_counts = []
+    for group in groups:
+        count = Bookmark.query.filter_by(group_id=group.id).count()
+        groups_with_counts.append({
+            'group': group,
+            'bookmark_count': count
+        })
+
+    return render_template('admin/groups.html', groups_with_counts=groups_with_counts)
+
+
+@admin.route('/groups/create', methods=['POST'])
+@login_required
+def create_group():
+    """创建分组"""
+    name = request.form.get('name')
+
+    if not name:
+        flash('分组名称不能为空', 'error')
+        return redirect(url_for('admin.groups'))
+
+    # 获取最大order值
+    max_order = db.session.query(db.func.max(Group.order)).filter_by(
+        user_id=current_user.id
+    ).scalar() or 0
+
+    group = Group(
+        user_id=current_user.id,
+        name=name,
+        order=max_order + 1
+    )
+
+    db.session.add(group)
+    db.session.commit()
+
+    flash('分组创建成功', 'success')
+    return redirect(url_for('admin.groups'))
+
+
+@admin.route('/groups/<int:group_id>/update', methods=['POST'])
+@login_required
+def update_group(group_id):
+    """更新分组"""
+    group = Group.query.filter_by(id=group_id, user_id=current_user.id).first_or_404()
+
+    group.name = request.form.get('name')
+    db.session.commit()
+
+    flash('分组更新成功', 'success')
+    return redirect(url_for('admin.groups'))
+
+
+@admin.route('/groups/<int:group_id>/delete', methods=['POST'])
+@login_required
+def delete_group(group_id):
+    """删除分组"""
+    group = Group.query.filter_by(id=group_id, user_id=current_user.id).first_or_404()
+
+    # 删除分组，书签会自动变为未分组（ON DELETE SET NULL）
+    db.session.delete(group)
+    db.session.commit()
+
+    flash('分组删除成功，原书签已移至未分类', 'success')
+    return redirect(url_for('admin.groups'))
+
+
+@admin.route('/groups/reorder', methods=['POST'])
+@login_required
+def reorder_groups():
+    """重新排序分组"""
+    data = request.get_json()
+    group_orders = data.get('groups', [])
+
+    for item in group_orders:
+        group = Group.query.filter_by(
+            id=item['id'],
+            user_id=current_user.id
+        ).first()
+
+        if group:
+            group.order = item['order']
+
+    db.session.commit()
+    return jsonify({'success': True})
