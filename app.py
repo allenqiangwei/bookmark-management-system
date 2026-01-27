@@ -3,17 +3,22 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from dotenv import load_dotenv
-from config import Config
 
 load_dotenv()
+
+from config import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 
-def create_app():
+def create_app(config_overrides=None):
     """应用工厂函数"""
     app = Flask(__name__)
     app.config.from_object(Config)
+
+    # 应用配置覆盖（用于测试）
+    if config_overrides:
+        app.config.update(config_overrides)
 
     # 初始化扩展
     db.init_app(app)
