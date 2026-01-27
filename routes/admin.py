@@ -2,6 +2,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from functools import wraps
+from sqlalchemy.exc import IntegrityError
 from app import db
 from models import Bookmark, Group, User
 
@@ -125,18 +126,22 @@ def reorder_bookmarks():
 @login_required
 def groups():
     """分组管理页面"""
-    groups = Group.query.filter_by(user_id=current_user.id).order_by(Group.order).all()
+    try:
+        groups = Group.query.filter_by(user_id=current_user.id).order_by(Group.order).all()
 
-    # 为每个分组统计书签数量
-    groups_with_counts = []
-    for group in groups:
-        count = Bookmark.query.filter_by(group_id=group.id).count()
-        groups_with_counts.append({
-            'group': group,
-            'bookmark_count': count
-        })
+        # 为每个分组统计书签数量
+        groups_with_counts = []
+        for group in groups:
+            count = Bookmark.query.filter_by(group_id=group.id).count()
+            groups_with_counts.append({
+                'group': group,
+                'bookmark_count': count
+            })
 
-    return render_template('admin/groups.html', groups_with_counts=groups_with_counts)
+        return render_template('admin/groups.html', groups_with_counts=groups_with_counts)
+    except Exception as e:
+        flash(f'加载分组列表时发生错误: {str(e)}', 'danger')
+        return render_template('admin/groups.html', groups_with_counts=[])
 
 
 @admin.route('/groups/create', methods=['POST'])
@@ -145,8 +150,8 @@ def create_group():
     """创建分组"""
     name = request.form.get('name')
 
-    if not name:
-        flash('分组名称不能为空', 'error')
+    if not name or not name.strip():
+        flash('分组名称不能为空', 'danger')
         return redirect(url_for('admin.groups'))
 
     # 获取最大order值
@@ -156,14 +161,20 @@ def create_group():
 
     group = Group(
         user_id=current_user.id,
-        name=name,
+        name=name.strip(),
         order=max_order + 1
     )
 
     db.session.add(group)
-    db.session.commit()
 
-    flash('分组创建成功', 'success')
+    try:
+        db.session.commit()
+        flash('分组创建成功', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash('该分组名称已存在', 'danger')
+        return redirect(url_for('admin.groups'))
+
     return redirect(url_for('admin.groups'))
 
 
@@ -173,10 +184,21 @@ def update_group(group_id):
     """更新分组"""
     group = Group.query.filter_by(id=group_id, user_id=current_user.id).first_or_404()
 
-    group.name = request.form.get('name')
-    db.session.commit()
+    name = request.form.get('name')
+    if not name or not name.strip():
+        flash('分组名称不能为空', 'danger')
+        return redirect(url_for('admin.groups'))
 
-    flash('分组更新成功', 'success')
+    group.name = name.strip()
+
+    try:
+        db.session.commit()
+        flash('分组更新成功', 'success')
+    except IntegrityError:
+        db.session.rollback()
+        flash('该分组名称已存在', 'danger')
+        return redirect(url_for('admin.groups'))
+
     return redirect(url_for('admin.groups'))
 
 
