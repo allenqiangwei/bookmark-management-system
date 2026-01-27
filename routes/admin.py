@@ -242,3 +242,83 @@ def reorder_groups():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@admin.route('/users')
+@admin_required
+def users():
+    """用户管理页面"""
+    all_users = User.query.order_by(User.created_at.desc()).all()
+    return render_template('admin/users.html', users=all_users)
+
+
+@admin.route('/users/create', methods=['POST'])
+@admin_required
+def create_user():
+    """创建用户"""
+    username = request.form.get('username')
+    password = request.form.get('password')
+    is_admin = request.form.get('is_admin') == 'on'
+
+    if not username or not password:
+        flash('用户名和密码不能为空', 'danger')
+        return redirect(url_for('admin.users'))
+
+    # 检查用户名是否已存在
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        flash('用户名已存在', 'danger')
+        return redirect(url_for('admin.users'))
+
+    user = User(username=username, is_admin=is_admin)
+    user.set_password(password)
+
+    db.session.add(user)
+    db.session.commit()
+
+    flash(f'用户 {username} 创建成功', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def reset_password(user_id):
+    """重置用户密码"""
+    user = User.query.get_or_404(user_id)
+    new_password = request.form.get('password')
+
+    if not new_password:
+        flash('新密码不能为空', 'danger')
+        return redirect(url_for('admin.users'))
+
+    user.set_password(new_password)
+    db.session.commit()
+
+    flash(f'用户 {user.username} 的密码已重置', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def delete_user(user_id):
+    """删除用户"""
+    user = User.query.get_or_404(user_id)
+
+    # 防止删除自己
+    if user.id == current_user.id:
+        flash('不能删除当前登录的用户', 'danger')
+        return redirect(url_for('admin.users'))
+
+    # 确保至少保留一个管理员
+    if user.is_admin:
+        admin_count = User.query.filter_by(is_admin=True).count()
+        if admin_count <= 1:
+            flash('至少需要保留一个管理员账号', 'danger')
+            return redirect(url_for('admin.users'))
+
+    username = user.username
+    db.session.delete(user)
+    db.session.commit()
+
+    flash(f'用户 {username} 已删除', 'success')
+    return redirect(url_for('admin.users'))
