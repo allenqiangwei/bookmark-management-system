@@ -1,18 +1,15 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required
-from app import db, login_manager
-from models import User
+from app import db
 
 auth = Blueprint('auth', __name__, url_prefix='/auth')
-
-@login_manager.user_loader
-def load_user(user_id):
-    """加载用户"""
-    return User.query.get(int(user_id))
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     """登录页面"""
+    # Import models here to ensure Flask app context is available
+    from models import User
+
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')

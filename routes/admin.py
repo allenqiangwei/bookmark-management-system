@@ -4,7 +4,6 @@ from flask_login import login_required, current_user
 from functools import wraps
 from sqlalchemy.exc import IntegrityError
 from app import db
-from models import Bookmark, Group, User
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -25,6 +24,7 @@ def admin_required(f):
 @admin_required
 def bookmarks():
     """Bookmark management page."""
+    from models import Bookmark, Group, User
     bookmarks = Bookmark.query.order_by(Bookmark.order).all()
     groups = Group.query.order_by(Group.order).all()
     users = User.query.all()
@@ -38,6 +38,7 @@ def bookmarks():
 @admin_required
 def create_bookmark():
     """Create a new bookmark."""
+    from models import Bookmark, Group, User
     try:
         title = request.form.get('title')
         url = request.form.get('url')
@@ -69,6 +70,7 @@ def create_bookmark():
 @admin_required
 def update_bookmark(bookmark_id):
     """Update an existing bookmark."""
+    from models import Bookmark, Group, User
     bookmark = Bookmark.query.get_or_404(bookmark_id)
 
     try:
@@ -90,6 +92,7 @@ def update_bookmark(bookmark_id):
 @admin_required
 def delete_bookmark(bookmark_id):
     """Delete a bookmark."""
+    from models import Bookmark, Group, User
     bookmark = Bookmark.query.get_or_404(bookmark_id)
 
     try:
@@ -107,6 +110,7 @@ def delete_bookmark(bookmark_id):
 @admin_required
 def reorder_bookmarks():
     """Reorder bookmarks via drag and drop."""
+    from models import Bookmark, Group, User
     try:
         order = request.json.get('order', [])
 
@@ -126,6 +130,7 @@ def reorder_bookmarks():
 @login_required
 def groups():
     """分组管理页面"""
+    from models import Bookmark, Group, User
     try:
         groups = Group.query.filter_by(user_id=current_user.id).order_by(Group.order).all()
 
@@ -148,6 +153,7 @@ def groups():
 @login_required
 def create_group():
     """创建分组"""
+    from models import Bookmark, Group, User
     name = request.form.get('name')
 
     if not name or not name.strip():
@@ -182,6 +188,7 @@ def create_group():
 @login_required
 def update_group(group_id):
     """更新分组"""
+    from models import Bookmark, Group, User
     group = Group.query.filter_by(id=group_id, user_id=current_user.id).first_or_404()
 
     name = request.form.get('name')
@@ -206,6 +213,7 @@ def update_group(group_id):
 @login_required
 def delete_group(group_id):
     """删除分组"""
+    from models import Bookmark, Group, User
     group = Group.query.filter_by(id=group_id, user_id=current_user.id).first_or_404()
 
     try:
@@ -224,6 +232,7 @@ def delete_group(group_id):
 @login_required
 def reorder_groups():
     """重新排序分组"""
+    from models import Bookmark, Group, User
     try:
         data = request.get_json()
         group_orders = data.get('groups', [])
@@ -248,6 +257,7 @@ def reorder_groups():
 @admin_required
 def users():
     """用户管理页面"""
+    from models import Bookmark, Group, User
     all_users = User.query.order_by(User.created_at.desc()).all()
     return render_template('admin/users.html', users=all_users)
 
@@ -256,6 +266,7 @@ def users():
 @admin_required
 def create_user():
     """创建用户"""
+    from models import Bookmark, Group, User
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '').strip()
     is_admin = request.form.get('is_admin') == 'on'
@@ -294,6 +305,7 @@ def create_user():
 @admin_required
 def reset_password(user_id):
     """重置用户密码"""
+    from models import Bookmark, Group, User
     user = User.query.get_or_404(user_id)
     new_password = request.form.get('password', '').strip()
 
@@ -317,6 +329,7 @@ def reset_password(user_id):
 @admin_required
 def delete_user(user_id):
     """删除用户"""
+    from models import Bookmark, Group, User
     user = User.query.get_or_404(user_id)
 
     # 防止删除自己

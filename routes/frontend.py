@@ -1,8 +1,6 @@
 """Frontend routes for displaying bookmarks."""
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
-from app import db
-from models import Bookmark, Group
 
 frontend = Blueprint('frontend', __name__)
 
@@ -19,6 +17,8 @@ def index():
 @login_required
 def dashboard():
     """Display user's bookmarks organized by groups."""
+    from models import Bookmark, Group
+
     # Get all groups for the current user, ordered by order field
     groups = Group.query.filter_by(user_id=current_user.id).order_by(Group.order).all()
 
