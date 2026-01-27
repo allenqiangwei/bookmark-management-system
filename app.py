@@ -19,7 +19,7 @@ def create_app():
     # 创建实例文件夹
     import os
     os.makedirs(os.path.join(app.instance_path), exist_ok=True)
-    os.makedirs(os.path.join(app.static_folder, 'favicons'), exist_ok=True)
+    os.makedirs(os.path.join(app.instance_path, 'favicons'), exist_ok=True)
 
     return app
 
