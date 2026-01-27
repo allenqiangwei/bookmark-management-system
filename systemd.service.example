@@ -1,0 +1,15 @@
+[Unit]
+Description=Bookmark Manager Application
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/bookmark-manager
+Environment="PATH=/path/to/bookmark-manager/venv/bin"
+ExecStart=/path/to/bookmark-manager/venv/bin/gunicorn -c gunicorn_config.py app:app
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
