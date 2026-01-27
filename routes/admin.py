@@ -60,7 +60,7 @@ def create_bookmark():
         flash('Bookmark created successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error creating bookmark: {str(e)}', 'danger')
+        flash('Error creating bookmark', 'danger')
 
     return redirect(url_for('admin.bookmarks'))
 
@@ -81,7 +81,7 @@ def update_bookmark(bookmark_id):
         flash('Bookmark updated successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error updating bookmark: {str(e)}', 'danger')
+        flash('Error updating bookmark', 'danger')
 
     return redirect(url_for('admin.bookmarks'))
 
@@ -98,7 +98,7 @@ def delete_bookmark(bookmark_id):
         flash('Bookmark deleted successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deleting bookmark: {str(e)}', 'danger')
+        flash('Error deleting bookmark', 'danger')
 
     return redirect(url_for('admin.bookmarks'))
 
@@ -119,7 +119,7 @@ def reorder_bookmarks():
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 400
+        return jsonify({'success': False, 'error': 'Failed to reorder bookmarks'}), 400
 
 
 @admin.route('/groups')
@@ -140,7 +140,7 @@ def groups():
 
         return render_template('admin/groups.html', groups_with_counts=groups_with_counts)
     except Exception as e:
-        flash(f'加载分组列表时发生错误: {str(e)}', 'danger')
+        flash('加载分组列表时发生错误', 'danger')
         return render_template('admin/groups.html', groups_with_counts=[])
 
 
@@ -241,7 +241,7 @@ def reorder_groups():
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': 'Failed to reorder groups'}), 500
 
 
 @admin.route('/users')
@@ -256,12 +256,18 @@ def users():
 @admin_required
 def create_user():
     """创建用户"""
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '').strip()
     is_admin = request.form.get('is_admin') == 'on'
 
-    if not username or not password:
-        flash('用户名和密码不能为空', 'danger')
+    # 验证用户名长度
+    if not username or len(username) < 3 or len(username) > 80:
+        flash('用户名长度必须在3-80个字符之间', 'danger')
+        return redirect(url_for('admin.users'))
+
+    # 验证密码长度
+    if not password or len(password) < 8:
+        flash('密码长度至少为8个字符', 'danger')
         return redirect(url_for('admin.users'))
 
     # 检查用户名是否已存在
@@ -273,10 +279,14 @@ def create_user():
     user = User(username=username, is_admin=is_admin)
     user.set_password(password)
 
-    db.session.add(user)
-    db.session.commit()
+    try:
+        db.session.add(user)
+        db.session.commit()
+        flash(f'用户 {username} 创建成功', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('创建用户失败', 'danger')
 
-    flash(f'用户 {username} 创建成功', 'success')
     return redirect(url_for('admin.users'))
 
 
@@ -285,16 +295,21 @@ def create_user():
 def reset_password(user_id):
     """重置用户密码"""
     user = User.query.get_or_404(user_id)
-    new_password = request.form.get('password')
+    new_password = request.form.get('password', '').strip()
 
-    if not new_password:
-        flash('新密码不能为空', 'danger')
+    # 验证密码长度
+    if not new_password or len(new_password) < 8:
+        flash('密码长度至少为8个字符', 'danger')
         return redirect(url_for('admin.users'))
 
-    user.set_password(new_password)
-    db.session.commit()
+    try:
+        user.set_password(new_password)
+        db.session.commit()
+        flash(f'用户 {user.username} 的密码已重置', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('重置密码失败', 'danger')
 
-    flash(f'用户 {user.username} 的密码已重置', 'success')
     return redirect(url_for('admin.users'))
 
 
@@ -309,16 +324,20 @@ def delete_user(user_id):
         flash('不能删除当前登录的用户', 'danger')
         return redirect(url_for('admin.users'))
 
-    # 确保至少保留一个管理员
-    if user.is_admin:
-        admin_count = User.query.filter_by(is_admin=True).count()
-        if admin_count <= 1:
-            flash('至少需要保留一个管理员账号', 'danger')
-            return redirect(url_for('admin.users'))
+    try:
+        # 确保至少保留一个管理员
+        if user.is_admin:
+            admin_count = User.query.filter_by(is_admin=True).count()
+            if admin_count <= 1:
+                flash('至少需要保留一个管理员账号', 'danger')
+                return redirect(url_for('admin.users'))
 
-    username = user.username
-    db.session.delete(user)
-    db.session.commit()
+        username = user.username
+        db.session.delete(user)
+        db.session.commit()
+        flash(f'用户 {username} 已删除', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('删除用户失败', 'danger')
 
-    flash(f'用户 {username} 已删除', 'success')
     return redirect(url_for('admin.users'))
