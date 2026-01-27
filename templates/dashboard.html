@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Bookmark Manager{% endblock %}
+
+{% block content %}
+<nav class="navbar">
+    <div class="navbar-content">
+        <div class="navbar-brand">Bookmark Manager</div>
+        <div class="navbar-user">
+            <span>{{ current_user.username }}</span>
+            {% if current_user.is_admin %}
+            <a href="/admin/bookmarks" class="btn btn-small">Manage Bookmarks</a>
+            <a href="/admin/groups" class="btn btn-small">Manage Groups</a>
+            {% endif %}
+            <a href="{{ url_for('auth.logout') }}" class="btn btn-small">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="dashboard-container">
+    {% if groups or ungrouped %}
+        <!-- Groups with bookmarks -->
+        {% for group in groups %}
+        <div class="group-section" data-group-id="{{ group.id }}">
+            <div class="group-header" onclick="toggleGroup({{ group.id }})">
+                <span class="collapse-icon">▼</span>
+                <h2>{{ group.name }}</h2>
+                <span class="bookmark-count">({{ grouped_bookmarks[group.id]|length }})</span>
+            </div>
+            <div class="bookmarks-grid" id="group-{{ group.id }}">
+                {% for bookmark in grouped_bookmarks[group.id] %}
+                <div class="bookmark-card">
+                    <a href="{{ bookmark.url }}" target="_blank" class="bookmark-link">
+                        {% if bookmark.favicon_url %}
+                        <img src="{{ bookmark.favicon_url }}" alt="" class="favicon" onerror="this.src='/static/default-favicon.png'">
+                        {% else %}
+                        <div class="favicon-placeholder">🔖</div>
+                        {% endif %}
+                        <div class="bookmark-title">{{ bookmark.title }}</div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Ungrouped bookmarks -->
+        {% if ungrouped %}
+        <div class="group-section" data-group-id="ungrouped">
+            <div class="group-header" onclick="toggleGroup('ungrouped')">
+                <span class="collapse-icon">▼</span>
+                <h2>Ungrouped</h2>
+                <span class="bookmark-count">({{ ungrouped|length }})</span>
+            </div>
+            <div class="bookmarks-grid" id="group-ungrouped">
+                {% for bookmark in ungrouped %}
+                <div class="bookmark-card">
+                    <a href="{{ bookmark.url }}" target="_blank" class="bookmark-link">
+                        {% if bookmark.favicon_url %}
+                        <img src="{{ bookmark.favicon_url }}" alt="" class="favicon" onerror="this.src='/static/default-favicon.png'">
+                        {% else %}
+                        <div class="favicon-placeholder">🔖</div>
+                        {% endif %}
+                        <div class="bookmark-title">{{ bookmark.title }}</div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <h2>No bookmarks yet</h2>
+            <p>Start adding bookmarks to organize your links!</p>
+            {% if current_user.is_admin %}
+            <a href="/admin/bookmarks" class="btn">Add Your First Bookmark</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.navbar {
+    background: #2c3e50;
+    color: white;
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.navbar-user {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.group-section {
+    margin-bottom: 2rem;
+}
+
+.group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    user-select: none;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 1rem;
+}
+
+.group-header:hover {
+    background: #f5f5f5;
+}
+
+.collapse-icon {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+    display: inline-block;
+}
+
+.group-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2c3e50;
+}
+
+.bookmark-count {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.bookmarks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    transition: all 0.3s ease;
+}
+
+.bookmarks-grid.collapsed {
+    display: none;
+}
+
+.group-section.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.bookmark-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1rem;
+    transition: all 0.2s;
+}
+
+.bookmark-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.bookmark-link {
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.favicon {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+}
+
+.favicon-placeholder {
+    font-size: 32px;
+}
+
+.bookmark-title {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #2c3e50;
+    word-break: break-word;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #7f8c8d;
+}
+
+.empty-state h2 {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+}
+</style>
+
+<script>
+function toggleGroup(groupId) {
+    const section = document.querySelector(`[data-group-id="${groupId}"]`);
+    const grid = document.getElementById(`group-${groupId}`);
+
+    section.classList.toggle('collapsed');
+    grid.classList.toggle('collapsed');
+
+    // Save state to localStorage
+    const collapsed = section.classList.contains('collapsed');
+    localStorage.setItem(`group-${groupId}-collapsed`, collapsed);
+}
+
+// Restore collapsed state from localStorage on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.group-section').forEach(function(section) {
+        const groupId = section.getAttribute('data-group-id');
+        const collapsed = localStorage.getItem(`group-${groupId}-collapsed`) === 'true';
+
+        if (collapsed) {
+            section.classList.add('collapsed');
+            const grid = document.getElementById(`group-${groupId}`);
+            if (grid) {
+                grid.classList.add('collapsed');
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
