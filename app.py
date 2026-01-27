@@ -29,6 +29,10 @@ def create_app(config_overrides=None):
     os.makedirs(os.path.join(app.instance_path), exist_ok=True)
     os.makedirs(os.path.join(app.instance_path, 'favicons'), exist_ok=True)
 
+    # 注册蓝图
+    from routes.auth import auth
+    app.register_blueprint(auth)
+
     return app
 
 if __name__ == '__main__':
