@@ -1,7 +1,11 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from dotenv import load_dotenv
 from config import Config
+
+load_dotenv()
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -17,7 +21,6 @@ def create_app():
     login_manager.login_view = 'auth.login'
 
     # 创建实例文件夹
-    import os
     os.makedirs(os.path.join(app.instance_path), exist_ok=True)
     os.makedirs(os.path.join(app.instance_path, 'favicons'), exist_ok=True)
 
