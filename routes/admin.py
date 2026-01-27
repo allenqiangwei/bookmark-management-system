@@ -208,11 +208,15 @@ def delete_group(group_id):
     """删除分组"""
     group = Group.query.filter_by(id=group_id, user_id=current_user.id).first_or_404()
 
-    # 删除分组，书签会自动变为未分组（ON DELETE SET NULL）
-    db.session.delete(group)
-    db.session.commit()
+    try:
+        # 删除分组，书签会自动变为未分组（ON DELETE SET NULL）
+        db.session.delete(group)
+        db.session.commit()
+        flash('分组删除成功，原书签已移至未分类', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('删除分组失败', 'danger')
 
-    flash('分组删除成功，原书签已移至未分类', 'success')
     return redirect(url_for('admin.groups'))
 
 
@@ -220,17 +224,21 @@ def delete_group(group_id):
 @login_required
 def reorder_groups():
     """重新排序分组"""
-    data = request.get_json()
-    group_orders = data.get('groups', [])
+    try:
+        data = request.get_json()
+        group_orders = data.get('groups', [])
 
-    for item in group_orders:
-        group = Group.query.filter_by(
-            id=item['id'],
-            user_id=current_user.id
-        ).first()
+        for item in group_orders:
+            group = Group.query.filter_by(
+                id=item['id'],
+                user_id=current_user.id
+            ).first()
 
-        if group:
-            group.order = item['order']
+            if group:
+                group.order = item['order']
 
-    db.session.commit()
-    return jsonify({'success': True})
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
