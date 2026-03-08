@@ -1,0 +1,10 @@
+services:
+  app:
+    build: .
+    ports:
+      - "5030:8000"
+    volumes:
+      - ./instance:/app/instance  # 持久化 SQLite 数据库和 favicons
+    env_file:
+      - .env
+    restart: unless-stopped

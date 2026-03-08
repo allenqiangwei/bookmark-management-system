@@ -105,4 +105,4 @@ if __name__ == '__main__':
     sys.modules['app'] = sys.modules['__main__']
 
     app = create_app()
-    app.run(host='0.0.0.0', port=5003, debug=True, use_reloader=False)
+    app.run(host='0.0.0.0', port=5030, debug=True, use_reloader=False)
