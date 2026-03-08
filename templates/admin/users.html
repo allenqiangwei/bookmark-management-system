@@ -1,0 +1,193 @@
+{% extends "admin/base.html" %}
+
+{% block title %}User Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">User Management</h1>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createModal">
+        <i class="bi bi-plus-lg me-2"></i>Add User
+    </button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Created At</th>
+                <th width="150">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    {{ user.username }}
+                    {% if user.id == current_user.id %}
+                    <span class="badge bg-info">You</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.is_admin %}
+                    <span class="badge bg-danger">Admin</span>
+                    {% else %}
+                    <span class="badge bg-secondary">User</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-warning reset-password-btn"
+                            data-id="{{ user.id }}"
+                            data-username="{{ user.username }}">
+                        <i class="bi bi-key"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger delete-btn"
+                            data-id="{{ user.id }}"
+                            data-username="{{ user.username }}"
+                            data-is-admin="{{ user.is_admin }}"
+                            data-is-current="{{ user.id == current_user.id }}"
+                            {% if user.id == current_user.id %}disabled{% endif %}>
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.create_user') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="createUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="createUsername" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="createPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="createPassword" name="password" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="createIsAdmin" name="is_admin">
+                        <label class="form-check-label" for="createIsAdmin">
+                            Administrator
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="resetPasswordForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Reset Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Reset password for user: <strong id="resetPasswordUsername"></strong></p>
+                    <div class="mb-3">
+                        <label for="newPassword" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="newPassword" name="password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete User Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" id="deleteForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-header">
+                    <h5 class="modal-title">Delete User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete user "<strong id="deleteUsername"></strong>"?</p>
+                    <p class="text-danger" id="adminWarning" style="display: none;">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        This user is an administrator!
+                    </p>
+                    <p class="text-muted">This action cannot be undone. All bookmarks and groups owned by this user will be deleted.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Reset password button handlers
+    document.querySelectorAll('.reset-password-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const username = this.dataset.username;
+
+            document.getElementById('resetPasswordForm').action = `/admin/users/${id}/reset-password`;
+            document.getElementById('resetPasswordUsername').textContent = username;
+            document.getElementById('newPassword').value = '';
+
+            new bootstrap.Modal(document.getElementById('resetPasswordModal')).show();
+        });
+    });
+
+    // Delete button handlers
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const username = this.dataset.username;
+            const isAdmin = this.dataset.isAdmin === 'True';
+            const isCurrent = this.dataset.isCurrent === 'True';
+
+            if (isCurrent) {
+                return; // Should not happen as button is disabled
+            }
+
+            document.getElementById('deleteForm').action = `/admin/users/${id}/delete`;
+            document.getElementById('deleteUsername').textContent = username;
+
+            // Show warning if admin
+            const adminWarning = document.getElementById('adminWarning');
+            if (isAdmin) {
+                adminWarning.style.display = 'block';
+            } else {
+                adminWarning.style.display = 'none';
+            }
+
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+</script>
+{% endblock %}

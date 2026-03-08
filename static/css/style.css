@@ -1,0 +1,27 @@
+/* 自定义样式 */
+.bookmark-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.bookmark-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+}
+
+.sortable-drag {
+    opacity: 0.8;
+}
+
+/* Flash 消息自动消失动画 */
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.flash-message {
+    animation: fadeOut 0.5s ease-in-out 4.5s forwards;
+}
